@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth.js (NextAuth) ----------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships Membership[]
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Multi-tenant core -----------------------------------------------------
+
+enum MembershipRole {
+  owner
+  admin
+  member
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  customers   Customer[]
+  locations   Location[]
+  jobs        Job[]
+  materials   Material[]
+  employees   Employee[]
+  photos      Photo[]
+}
+
+model Membership {
+  id             String           @id @default(uuid())
+  userId         String
+  organizationId String
+  role           MembershipRole   @default(member)
+  createdAt      DateTime         @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+// --- Domain ----------------------------------------------------------------
+
+model Customer {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  name               String
+  primaryContactName String?
+  phoneNumber        String?
+  email              String?
+  address            String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations    Location[]
+  jobs         Job[]
+
+  @@index([organizationId])
+}
+
+model Location {
+  id               String   @id @default(uuid())
+  organizationId   String
+  customerId       String
+  name             String
+  formattedAddress String
+  latitude         Float?
+  longitude        Float?
+  city             String?
+  state            String?
+  postalCode       String?
+  notes            String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobs         Job[]
+
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+enum JobStatus {
+  draft
+  submitted
+  approved
+  scheduled
+  inProgress
+  onHold
+  completed
+  invoiced
+  cancelled
+}
+
+model Job {
+  id              String    @id @default(uuid())
+  organizationId  String
+  jobNumber       String
+  title           String
+  customerId      String
+  locationId      String
+  createdAt       DateTime  @default(now())
+  scheduledDate   DateTime?
+  completedDate   DateTime?
+  lastActivityAt  DateTime  @default(now())
+  priorityOffset  Int       @default(0)
+  status          JobStatus @default(draft)
+  description     String    @default("")
+  internalNotes   String    @default("")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  materials       JobMaterial[]
+  employeeHours   JobEmployeeHours[]
+  jobEmployees    JobEmployee[]
+  photos          Photo[]
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([locationId])
+}
+
+model Material {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  sku            String?
+  unit           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobMaterials     JobMaterial[]
+
+  @@index([organizationId])
+}
+
+model JobMaterial {
+  id            String  @id @default(uuid())
+  jobId         String
+  materialId    String
+  quantity      Float
+  unitOverride  String?
+  note          String?
+
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@index([jobId])
+  @@index([materialId])
+}
+
+model Employee {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  phoneNumber    String?
+  email          String?
+  role           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobEmployees JobEmployee[]
+  hoursRows    JobEmployeeHours[] @relation("HoursEmployee")
+
+  @@index([organizationId])
+}
+
+model JobEmployee {
+  id           String @id @default(uuid())
+  jobId        String
+  employeeId   String
+  sortOrder    Int    @default(0)
+
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, employeeId])
+  @@index([jobId])
+}
+
+model JobEmployeeHours {
+  id           String  @id @default(uuid())
+  jobId        String
+  employeeId   String?
+  employeeName String
+  hours        Float
+
+  job      Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  employee Employee? @relation("HoursEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+}
+
+model Photo {
+  id             String   @id @default(uuid())
+  organizationId String
+  jobId          String
+  storageKey     String?
+  url            String? // public blob URL after upload
+  fileName       String
+  createdAt      DateTime @default(now())
+  takenAt        DateTime @default(now())
+  notes          String?
+  caption        String?
+  isAiRoofPreview Boolean  @default(false)
+  aiRoofPrompt    String? @db.Text
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job          Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([jobId])
+}
