@@ -4,7 +4,9 @@ import { auth } from "@/auth";
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/api") && !pathname.startsWith("/api/auth")) {
+  // Let all /api routes through: /api/auth/* is NextAuth's own (must be public for
+  // login to work), and other /api routes enforce auth() themselves in their handlers.
+  if (pathname.startsWith("/api")) {
     return NextResponse.next();
   }
 
