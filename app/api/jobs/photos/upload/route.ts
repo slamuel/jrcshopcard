@@ -41,12 +41,24 @@ export async function POST(req: Request) {
     url = blob.url;
     storageKey = blob.pathname;
   } else {
-    const dir = join(process.cwd(), "public", "uploads", "jobs", orgId);
-    await mkdir(dir, { recursive: true });
-    const path = join(dir, fileName);
-    await writeFile(path, buf);
-    storageKey = `uploads/jobs/${orgId}/${fileName}`;
-    url = `/${storageKey}`;
+    // Local filesystem fallback (dev only). On Vercel the filesystem is
+    // read-only, so surface a clear, actionable error instead of crashing.
+    try {
+      const dir = join(process.cwd(), "public", "uploads", "jobs", orgId);
+      await mkdir(dir, { recursive: true });
+      const path = join(dir, fileName);
+      await writeFile(path, buf);
+      storageKey = `uploads/jobs/${orgId}/${fileName}`;
+      url = `/${storageKey}`;
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Photo storage isn't configured. Add a Vercel Blob store (BLOB_READ_WRITE_TOKEN) and redeploy.",
+        },
+        { status: 503 }
+      );
+    }
   }
 
   const photo = await prisma.photo.create({
