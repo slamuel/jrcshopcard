@@ -79,16 +79,13 @@ export function extractStreetName(address: string): string {
 }
 
 export function generateJobTitle(args: {
-  jobId: string;
+  jobNumber: string;
   customerName: string;
   formattedAddress: string;
-  now?: Date;
 }): string {
-  const year = (args.now ?? new Date()).getFullYear();
-  const jobIdShort = args.jobId.replace(/-/g, "").slice(0, 6);
   const cust = extractCustomerName(args.customerName);
   const street = extractStreetName(args.formattedAddress);
-  return `${year}-${jobIdShort}-${cust}-${street}`;
+  return `${args.jobNumber}-${cust}-${street}`;
 }
 
 export function nextJobNumber(year: number, existingJobNumbers: string[]): string {
@@ -99,5 +96,5 @@ export function nextJobNumber(year: number, existingJobNumbers: string[]): strin
     const n = parseInt(jn.slice(prefix.length), 10);
     if (!Number.isNaN(n)) max = Math.max(max, n);
   }
-  return `${year}-${String(max + 1).padStart(3, "0")}`;
+  return `${year}-${String(max + 1).padStart(5, "0")}`;
 }

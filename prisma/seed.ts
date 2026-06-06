@@ -198,7 +198,7 @@ async function main() {
     create: {
       id: JOB_1,
       organizationId: ORG_ID,
-      jobNumber: `${now.getFullYear()}-001`,
+      jobNumber: `${now.getFullYear()}-00001`,
       title: "Full Roof Replacement - Main Residence",
       customerId: CUSTOMER_1,
       locationId: LOC_1,
@@ -271,7 +271,7 @@ async function main() {
     create: {
       id: JOB_2,
       organizationId: ORG_ID,
-      jobNumber: `${now.getFullYear()}-002`,
+      jobNumber: `${now.getFullYear()}-00002`,
       title: "Shingle Repair - Oak Avenue",
       customerId: CUSTOMER_2,
       locationId: LOC_2,

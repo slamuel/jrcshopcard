@@ -205,7 +205,7 @@ export async function createJobFromWizard(input: {
   const title =
     input.title?.trim() ||
     generateJobTitle({
-      jobId: input.jobId,
+      jobNumber,
       customerName: customer.name,
       formattedAddress: location.formattedAddress,
     });
