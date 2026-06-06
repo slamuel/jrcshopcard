@@ -5,7 +5,9 @@ export const SETTING_KEYS = {
   geminiApiKey: "gemini_api_key",
 } as const;
 
-export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash-preview-image-generation";
+// Must be an image-capable model (text models like gemini-*-flash only return
+// a description). "gemini-2.5-flash-image" is Google's current image model.
+export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-image";
 
 /** All settings for an org as a key→value map (null values omitted). */
 export async function getOrgSettings(orgId: string): Promise<Record<string, string>> {

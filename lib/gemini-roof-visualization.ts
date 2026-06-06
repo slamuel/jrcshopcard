@@ -26,7 +26,7 @@ export async function generateRoofVisualization(input: {
     return { ok: false, error: "Gemini API key is not configured." };
   }
 
-  const model = input.model || "gemini-2.0-flash-preview-image-generation";
+  const model = input.model || "gemini-2.5-flash-image";
 
   const fullText = `${DEFAULT_SYSTEM}\n\n${input.userPrompt.trim() || "Replace with modern charcoal architectural asphalt shingles."}`;
 

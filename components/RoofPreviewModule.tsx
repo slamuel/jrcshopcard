@@ -25,6 +25,7 @@ export function RoofPreviewModule({
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<{ dataUrl: string; ext: string } | null>(null);
+  const [modelNote, setModelNote] = useState<string | null>(null);
   const [attachJobId, setAttachJobId] = useState("");
 
   const disabled = !geminiConfigured || busy;
@@ -34,6 +35,7 @@ export function RoofPreviewModule({
     setErr(null);
     setNotice(null);
     setResult(null);
+    setModelNote(null);
     setBusy(true);
     try {
       const fd = new FormData();
@@ -46,7 +48,13 @@ export function RoofPreviewModule({
         mimeType?: string;
       };
       if (!res.ok || !data.imageBase64) {
-        setErr(data.error ?? "Request failed");
+        // 502 = Gemini responded but returned no image (e.g. a text-only model).
+        // Surface that in the Result panel rather than as a hard error.
+        if (res.status === 502 && data.error) {
+          setModelNote(data.error);
+        } else {
+          setErr(data.error ?? "Request failed");
+        }
         return;
       }
       const mime = data.mimeType || "image/png";
@@ -175,6 +183,16 @@ export function RoofPreviewModule({
                 {notice && <p className="text-sm text-emerald-700">{notice}</p>}
               </div>
             )}
+          </div>
+        ) : modelNote ? (
+          <div className="space-y-2">
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+              The model returned a description, not an image. Make sure the
+              configured model supports image output (e.g.{" "}
+              <code className="rounded bg-white px-1">gemini-2.5-flash-image</code>) in
+              Admin → Gemini.
+            </p>
+            <p className="whitespace-pre-wrap text-sm text-zinc-600">{modelNote}</p>
           </div>
         ) : (
           <p className="text-sm text-zinc-500">
