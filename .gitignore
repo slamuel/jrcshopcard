@@ -39,3 +39,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Local photo uploads (filesystem fallback when no Blob token)
+/public/uploads/
