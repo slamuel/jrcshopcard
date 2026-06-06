@@ -35,7 +35,7 @@ type Payload = {
     email: string | null;
   } | null;
   location: { formattedAddress: string; name: string } | null;
-  materials: { id: string; name: string; unit: string | null }[];
+  materials: { id: string; name: string; unit: string | null; materialType: string }[];
   employees: { id: string; name: string }[];
   photos: {
     id: string;
@@ -81,28 +81,20 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
     payload.job.completedDate ? isoToLocalDate(payload.job.completedDate) : ""
   );
   const [hoursRows, setHoursRows] = useState(payload.employeeHours);
-  const [matQty, setMatQty] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    for (const jm of payload.jobMaterials) {
-      m[jm.materialId] = String(jm.quantity);
-    }
-    return m;
-  });
-  const [matUnit, setMatUnit] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    for (const jm of payload.jobMaterials) {
-      if (jm.unitOverride) m[jm.materialId] = jm.unitOverride;
-    }
-    return m;
-  });
-  const [matNote, setMatNote] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    for (const jm of payload.jobMaterials) {
-      if (jm.note) m[jm.materialId] = jm.note;
-    }
-    return m;
-  });
+  const [lines, setLines] = useState<
+    { materialId: string; quantity: string; unitOverride: string; note: string }[]
+  >(() =>
+    payload.jobMaterials.map((jm) => ({
+      materialId: jm.materialId,
+      quantity: String(jm.quantity),
+      unitOverride: jm.unitOverride ?? "",
+      note: jm.note ?? "",
+    }))
+  );
+  const [addType, setAddType] = useState("");
+  const [addMaterialId, setAddMaterialId] = useState("");
   const [newMatName, setNewMatName] = useState("");
+  const [newMatType, setNewMatType] = useState("");
   const [newMatSku, setNewMatSku] = useState("");
   const [newMatUnit, setNewMatUnit] = useState("");
   const [addingMat, setAddingMat] = useState(false);
@@ -138,16 +130,32 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
     }
   }
 
+  function addMaterialLine() {
+    if (!addMaterialId) return;
+    if (lines.some((l) => l.materialId === addMaterialId)) {
+      // already on the job — just clear the selector
+      setAddType("");
+      setAddMaterialId("");
+      return;
+    }
+    setLines((prev) => [
+      ...prev,
+      { materialId: addMaterialId, quantity: "1", unitOverride: "", note: "" },
+    ]);
+    setAddType("");
+    setAddMaterialId("");
+  }
+
   async function saveMaterials() {
-    const lines = payload.materials
-      .map((m) => {
-        const q = parseFloat(matQty[m.id] ?? "0");
+    const payloadLines = lines
+      .map((l) => {
+        const q = parseFloat(l.quantity);
         if (!q || q <= 0) return null;
         return {
-          materialId: m.id,
+          materialId: l.materialId,
           quantity: q,
-          unitOverride: matUnit[m.id]?.trim() || null,
-          note: matNote[m.id]?.trim() || null,
+          unitOverride: l.unitOverride.trim() || null,
+          note: l.note.trim() || null,
         };
       })
       .filter(Boolean) as {
@@ -158,7 +166,7 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
     }[];
     setSaving(true);
     try {
-      await saveJobMaterials(payload.job.id, lines);
+      await saveJobMaterials(payload.job.id, payloadLines);
     } finally {
       setSaving(false);
     }
@@ -179,10 +187,12 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
     try {
       await createCatalogMaterial({
         name: newMatName.trim(),
+        materialType: newMatType.trim() || undefined,
         sku: newMatSku.trim() || undefined,
         unit: newMatUnit.trim() || undefined,
       });
       setNewMatName("");
+      setNewMatType("");
       setNewMatSku("");
       setNewMatUnit("");
       router.refresh();
@@ -190,6 +200,16 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
       setAddingMat(false);
     }
   }
+
+  const materialById = new Map(payload.materials.map((m) => [m.id, m]));
+  const materialCategories = Array.from(
+    new Set(payload.materials.map((m) => m.materialType))
+  ).sort();
+  const materialsForAddType = addType
+    ? payload.materials
+        .filter((m) => m.materialType === addType)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -302,54 +322,148 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
 
       <Section
         title="Materials"
-        description="Quantity, optional unit override, and note per line."
+        description="Add the materials used on this job."
       >
-        <ul className="space-y-3">
-          {payload.materials.map((m) => (
-            <li key={m.id} className="rounded-lg border border-zinc-200 p-3">
-              <div className="flex items-baseline justify-between">
-                <span className="font-medium text-zinc-900">{m.name}</span>
-                <span className="text-xs text-zinc-400">Default: {m.unit ?? "—"}</span>
-              </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                <Field label="Qty">
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="0"
-                    value={matQty[m.id] ?? ""}
-                    onChange={(e) => setMatQty((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                  />
-                </Field>
-                <Field label="Unit override">
-                  <Input
-                    placeholder="e.g. bundles"
-                    value={matUnit[m.id] ?? ""}
-                    onChange={(e) => setMatUnit((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                  />
-                </Field>
-                <Field label="Note">
-                  <Input
-                    value={matNote[m.id] ?? ""}
-                    onChange={(e) => setMatNote((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                  />
-                </Field>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <Button className="mt-3" variant="secondary" size="sm" onClick={saveMaterials} disabled={saving}>
+        {/* Add-material flow: Type → Material → Add */}
+        <div className="rounded-lg border border-dashed border-zinc-300 p-3">
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <Field label="Type">
+              <Select
+                value={addType}
+                onChange={(e) => {
+                  setAddType(e.target.value);
+                  setAddMaterialId("");
+                }}
+              >
+                <option value="">Select type…</option>
+                {materialCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Material">
+              <Select
+                value={addMaterialId}
+                disabled={!addType}
+                onChange={(e) => setAddMaterialId(e.target.value)}
+              >
+                <option value="">{addType ? "Select material…" : "Choose a type first"}</option>
+                {materialsForAddType.map((m) => (
+                  <option
+                    key={m.id}
+                    value={m.id}
+                    disabled={lines.some((l) => l.materialId === m.id)}
+                  >
+                    {m.name}
+                    {lines.some((l) => l.materialId === m.id) ? " (added)" : ""}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Button size="md" onClick={addMaterialLine} disabled={!addMaterialId}>
+              Add
+            </Button>
+          </div>
+        </div>
+
+        {/* Added items only */}
+        {lines.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">No materials added yet.</p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {lines.map((line) => {
+              const m = materialById.get(line.materialId);
+              return (
+                <li key={line.materialId} className="rounded-lg border border-zinc-200 p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium text-zinc-900">
+                      {m?.name ?? "Unknown material"}
+                      {m && (
+                        <span className="ml-2 text-xs font-normal text-zinc-400">{m.materialType}</span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-red-600 hover:text-red-700"
+                      onClick={() =>
+                        setLines((prev) => prev.filter((l) => l.materialId !== line.materialId))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <Field label="Qty">
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="0"
+                        value={line.quantity}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((l) =>
+                              l.materialId === line.materialId ? { ...l, quantity: e.target.value } : l
+                            )
+                          )
+                        }
+                      />
+                    </Field>
+                    <Field label={`Unit override${m?.unit ? ` (default: ${m.unit})` : ""}`}>
+                      <Input
+                        placeholder={m?.unit ?? "e.g. bundles"}
+                        value={line.unitOverride}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((l) =>
+                              l.materialId === line.materialId ? { ...l, unitOverride: e.target.value } : l
+                            )
+                          )
+                        }
+                      />
+                    </Field>
+                    <Field label="Note">
+                      <Input
+                        value={line.note}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((l) =>
+                              l.materialId === line.materialId ? { ...l, note: e.target.value } : l
+                            )
+                          )
+                        }
+                      />
+                    </Field>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Button className="mt-4" variant="secondary" size="sm" onClick={saveMaterials} disabled={saving}>
           Save materials
         </Button>
 
         <div className="mt-6 border-t border-zinc-200 pt-4">
           <h3 className="text-sm font-semibold text-zinc-700">New catalog item</h3>
           <p className="mt-0.5 text-xs text-zinc-500">Add a material to the organization catalog.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Input placeholder="Name *" value={newMatName} onChange={(e) => setNewMatName(e.target.value)} />
+            <Input
+              placeholder="Category"
+              list="material-categories"
+              value={newMatType}
+              onChange={(e) => setNewMatType(e.target.value)}
+            />
             <Input placeholder="SKU" value={newMatSku} onChange={(e) => setNewMatSku(e.target.value)} />
             <Input placeholder="Default unit" value={newMatUnit} onChange={(e) => setNewMatUnit(e.target.value)} />
           </div>
+          <datalist id="material-categories">
+            {materialCategories.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
           <Button
             className="mt-3"
             size="sm"

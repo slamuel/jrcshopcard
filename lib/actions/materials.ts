@@ -13,6 +13,7 @@ async function oid() {
 
 export async function createCatalogMaterial(input: {
   name: string;
+  materialType?: string;
   sku?: string;
   unit?: string;
 }) {
@@ -21,6 +22,7 @@ export async function createCatalogMaterial(input: {
     data: {
       organizationId: org,
       name: input.name.trim(),
+      materialType: input.materialType?.trim() || "Other",
       sku: input.sku?.trim() || undefined,
       unit: input.unit?.trim() || undefined,
       isActive: true,
@@ -28,4 +30,16 @@ export async function createCatalogMaterial(input: {
   });
   revalidatePath("/jobs");
   return m;
+}
+
+/** Distinct material categories for this org, for grouping/selection. */
+export async function listMaterialCategories(): Promise<string[]> {
+  const org = await oid();
+  const rows = await prisma.material.findMany({
+    where: { organizationId: org },
+    distinct: ["materialType"],
+    select: { materialType: true },
+    orderBy: { materialType: "asc" },
+  });
+  return rows.map((r) => r.materialType);
 }

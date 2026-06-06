@@ -180,6 +180,7 @@ model Material {
   id             String   @id @default(uuid())
   organizationId String
   name           String
+  materialType   String   @default("Other")
   sku            String?
   unit           String?
   isActive       Boolean  @default(true)
