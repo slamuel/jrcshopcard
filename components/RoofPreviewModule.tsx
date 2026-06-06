@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Section } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Textarea, Select } from "@/components/ui/Input";
+import { downscaleToFile } from "@/lib/downscale-image";
 
 const DEFAULT_PROMPT =
   "Replace the roof with architectural asphalt shingles, charcoal gray, dimensional profile. Keep everything else the same.";
@@ -37,7 +38,7 @@ export function RoofPreviewModule({
     try {
       const fd = new FormData();
       fd.set("prompt", prompt);
-      fd.set("image", file);
+      fd.set("image", await downscaleToFile(file));
       const res = await fetch("/api/roof-preview", { method: "POST", body: fd });
       const data = (await res.json()) as {
         error?: string;
@@ -68,7 +69,7 @@ export function RoofPreviewModule({
     try {
       const fd = new FormData();
       fd.set("prompt", prompt);
-      fd.set("image", file);
+      fd.set("image", await downscaleToFile(file));
       const res = await fetch(`/api/jobs/${attachJobId}/roof-visualization`, {
         method: "POST",
         body: fd,

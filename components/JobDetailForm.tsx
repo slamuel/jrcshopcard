@@ -15,6 +15,7 @@ import { Section } from "@/components/ui/Card";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { downscaleToFile } from "@/lib/downscale-image";
 
 type Payload = {
   job: {
@@ -585,7 +586,7 @@ export function JobDetailForm({ payload }: { payload: Payload }) {
             const f = e.target.files?.[0];
             if (!f) return;
             const fd = new FormData();
-            fd.set("file", f);
+            fd.set("file", await downscaleToFile(f));
             fd.set("jobId", payload.job.id);
             const res = await fetch("/api/jobs/photos/upload", { method: "POST", body: fd });
             if (res.ok) {
