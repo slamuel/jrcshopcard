@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateRoofVisualization } from "@/lib/gemini-roof-visualization";
+import { getGeminiConfig } from "@/lib/settings";
 import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -59,10 +60,13 @@ export async function POST(
     );
   }
 
+  const { apiKey, model } = await getGeminiConfig(orgId);
   const result = await generateRoofVisualization({
     imageBase64: base64,
     imageMimeType: mime,
     userPrompt: prompt,
+    apiKey,
+    model,
   });
 
   if (!result.ok) {

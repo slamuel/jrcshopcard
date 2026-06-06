@@ -26,12 +26,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        const organizationId = user.memberships[0]?.organizationId;
+        const membership = user.memberships[0];
         return {
           id: user.id,
           email: user.email ?? undefined,
           name: user.name ?? undefined,
-          organizationId,
+          organizationId: membership?.organizationId,
+          role: membership?.role,
         };
       },
     }),
@@ -41,6 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.sub = user.id;
         token.organizationId = user.organizationId;
+        token.role = user.role;
       }
       return token;
     },
@@ -48,6 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.organizationId = token.organizationId as string | undefined;
+        session.user.role = token.role;
       }
       return session;
     },

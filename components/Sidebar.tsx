@@ -31,11 +31,18 @@ const NAV: NavItem[] = [
   { href: "/roof-preview", label: "Roof Preview", icon: icon(<><path d="m3 11 9-7 9 7" /><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9" /><path d="M9 21v-6h6v6" /></>) },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+const ADMIN_ITEM: NavItem = {
+  href: "/admin",
+  label: "Admin",
+  icon: icon(<><path d="M12 2 4 5v6c0 5 3.4 7.7 8 9 4.6-1.3 8-4 8-9V5l-8-3Z" /></>),
+};
+
+function NavLinks({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV, ADMIN_ITEM] : NAV;
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-      {NAV.map((item) => {
+      {items.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(item.href + "/");
         return (
@@ -60,7 +67,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarBody({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-zinc-200 px-5">
@@ -72,7 +79,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
           JRC Shop Card
         </Link>
       </div>
-      <NavLinks onNavigate={onNavigate} />
+      <NavLinks isAdmin={isAdmin} onNavigate={onNavigate} />
       <div className="border-t border-zinc-200 p-3">
         <form action={signOutAction}>
           <button
@@ -101,7 +108,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
@@ -134,7 +141,7 @@ export function Sidebar() {
 
       {/* Desktop fixed sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-zinc-200 bg-white lg:block">
-        <SidebarBody />
+        <SidebarBody isAdmin={isAdmin} />
       </aside>
 
       {/* Mobile drawer */}
@@ -164,7 +171,7 @@ export function Sidebar() {
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
-            <SidebarBody onNavigate={close} />
+            <SidebarBody isAdmin={isAdmin} onNavigate={close} />
           </div>
         </div>
       )}

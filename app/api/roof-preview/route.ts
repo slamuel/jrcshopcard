@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateRoofVisualization } from "@/lib/gemini-roof-visualization";
+import { getGeminiConfig } from "@/lib/settings";
 
 export const maxDuration = 120;
 
@@ -20,7 +21,8 @@ const ALLOWED_TYPES = new Set([
  */
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user?.organizationId) {
+  const orgId = session?.user?.organizationId;
+  if (!orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -41,11 +43,14 @@ export async function POST(req: Request) {
     );
   }
 
+  const { apiKey, model } = await getGeminiConfig(orgId);
   const buf = Buffer.from(await file.arrayBuffer());
   const result = await generateRoofVisualization({
     imageBase64: buf.toString("base64"),
     imageMimeType: file.type || "image/jpeg",
     userPrompt: prompt,
+    apiKey,
+    model,
   });
 
   if (!result.ok) {

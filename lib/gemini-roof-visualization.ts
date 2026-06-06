@@ -18,15 +18,15 @@ export async function generateRoofVisualization(input: {
   imageBase64: string;
   imageMimeType: string;
   userPrompt: string;
+  apiKey?: string;
+  model?: string;
 }): Promise<RoofVizResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = input.apiKey;
   if (!apiKey) {
-    return { ok: false, error: "GEMINI_API_KEY is not configured." };
+    return { ok: false, error: "Gemini API key is not configured." };
   }
 
-  const model =
-    process.env.GEMINI_IMAGE_MODEL ||
-    "gemini-2.0-flash-preview-image-generation";
+  const model = input.model || "gemini-2.0-flash-preview-image-generation";
 
   const fullText = `${DEFAULT_SYSTEM}\n\n${input.userPrompt.trim() || "Replace with modern charcoal architectural asphalt shingles."}`;
 

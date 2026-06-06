@@ -78,6 +78,21 @@ model Organization {
   materials   Material[]
   employees   Employee[]
   photos      Photo[]
+  settings    AppSetting[]
+}
+
+/// Org-scoped key/value app settings (e.g. gemini_model, gemini_api_key).
+model AppSetting {
+  id             String   @id @default(uuid())
+  organizationId String
+  key            String
+  value          String?
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
 }
 
 model Membership {
