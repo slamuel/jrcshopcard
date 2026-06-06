@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getEmployee } from "@/lib/actions/employees";
 import { EmployeeEditForm } from "@/components/EmployeeEditForm";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function EmployeeDetailPage({
   params,
@@ -13,11 +13,8 @@ export default async function EmployeeDetailPage({
   if (!e) notFound();
 
   return (
-    <div className="space-y-6">
-      <Link href="/employees" className="text-sm text-zinc-500 hover:text-zinc-800">
-        ← Employees
-      </Link>
-      <h1 className="text-2xl font-bold">{e.name}</h1>
+    <div>
+      <PageHeader title={e.name} backHref="/employees" backLabel="Employees" />
       <EmployeeEditForm employee={JSON.parse(JSON.stringify(e))} />
     </div>
   );

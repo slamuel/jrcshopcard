@@ -1,10 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { loadReportingBundle } from "@/lib/actions/reporting";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, Section } from "@/components/ui/Card";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { cn } from "@/components/ui/cn";
 
 type Mode = "thisWeek" | "thisMonth" | "allTime";
+
+function StatRow({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
+  return (
+    <li className="flex items-center justify-between py-1.5 text-sm">
+      <span className="text-zinc-600">{label}</span>
+      <span className="font-medium text-zinc-900">{value}</span>
+    </li>
+  );
+}
 
 export function ReportsView() {
   const [mode, setMode] = useState<Mode>("allTime");
@@ -25,16 +37,11 @@ export function ReportsView() {
     void load();
   }, [load]);
 
-  if (loading || !data) {
-    return <p className="text-zinc-500">Loading…</p>;
-  }
-
-  const o = data.overview;
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold sm:text-2xl">Reports</h1>
-      <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-1 sm:flex-row sm:gap-2">
+    <div>
+      <PageHeader title="Reports" description="Overview of jobs, customers, crew, and materials." />
+
+      <div className="mb-6 inline-flex rounded-lg border border-zinc-200 bg-white p-1">
         {(
           [
             ["thisWeek", "This week"],
@@ -45,9 +52,10 @@ export function ReportsView() {
           <button
             key={key}
             type="button"
-            className={`min-h-11 flex-1 touch-manipulation rounded-md px-3 py-2.5 text-sm font-medium sm:py-2 ${
-              mode === key ? "bg-zinc-900 text-white" : "text-zinc-600 active:bg-zinc-200 sm:hover:bg-zinc-100"
-            }`}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              mode === key ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            )}
             onClick={() => setMode(key)}
           >
             {label}
@@ -55,76 +63,70 @@ export function ReportsView() {
         ))}
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-zinc-500">Jobs overview</h2>
-          <p className="mt-2 text-2xl font-bold">{o.totalJobs}</p>
-          <p className="text-sm text-zinc-600">
-            Open: {o.openJobs} · Completed: {o.completedJobs}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            Scheduled today: {o.scheduledToday} · this week: {o.scheduledThisWeek}
-          </p>
+      {loading || !data ? (
+        <p className="text-sm text-zinc-500">Loading…</p>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Total jobs</h2>
+              <p className="mt-2 text-3xl font-semibold text-zinc-900">{data.overview.totalJobs}</p>
+              <p className="mt-1 text-sm text-zinc-500">
+                Open {data.overview.openJobs} · Completed {data.overview.completedJobs}
+              </p>
+            </Card>
+            <Card>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Scheduled today</h2>
+              <p className="mt-2 text-3xl font-semibold text-zinc-900">{data.overview.scheduledToday}</p>
+            </Card>
+            <Card>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Scheduled this week</h2>
+              <p className="mt-2 text-3xl font-semibold text-zinc-900">{data.overview.scheduledThisWeek}</p>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Section title="By status">
+              <ul className="divide-y divide-zinc-100">
+                {data.byStatus.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between py-1.5">
+                    <StatusBadge status={r.status} />
+                    <span className="text-sm font-medium text-zinc-900">{r.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+
+            <Section title="By customer">
+              <ul className="divide-y divide-zinc-100">
+                {data.byCustomer.map((r) => (
+                  <StatRow key={r.id} label={r.customerName} value={r.jobCount} />
+                ))}
+              </ul>
+            </Section>
+
+            <Section title="Active jobs by employee">
+              <ul className="divide-y divide-zinc-100">
+                {data.byEmployee.map((r) => (
+                  <StatRow key={r.id} label={r.employeeName} value={r.activeJobCount} />
+                ))}
+              </ul>
+            </Section>
+
+            <Section title="Materials usage">
+              <ul className="divide-y divide-zinc-100">
+                {data.matUse.map((r) => (
+                  <StatRow
+                    key={r.id}
+                    label={r.materialName}
+                    value={`${r.totalQuantity}${r.unit ? ` ${r.unit}` : ""}`}
+                  />
+                ))}
+              </ul>
+            </Section>
+          </div>
         </div>
-      </section>
-
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">By status</h2>
-        <ul className="mt-2 space-y-1 text-sm">
-          {data.byStatus.map((r) => (
-            <li key={r.id} className="flex justify-between">
-              <span>{r.status}</span>
-              <span className="font-medium">{r.count}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">By customer</h2>
-        <ul className="mt-2 space-y-1 text-sm">
-          {data.byCustomer.map((r) => (
-            <li key={r.id} className="flex justify-between">
-              <span>{r.customerName}</span>
-              <span className="font-medium">{r.jobCount}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Active jobs by employee</h2>
-        <ul className="mt-2 space-y-1 text-sm">
-          {data.byEmployee.map((r) => (
-            <li key={r.id} className="flex justify-between">
-              <span>{r.employeeName}</span>
-              <span className="font-medium">{r.activeJobCount}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Materials usage</h2>
-        <ul className="mt-2 space-y-1 text-sm">
-          {data.matUse.map((r) => (
-            <li key={r.id} className="flex justify-between">
-              <span>{r.materialName}</span>
-              <span className="font-medium">
-                {r.totalQuantity}
-                {r.unit ? ` ${r.unit}` : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <p className="text-sm text-zinc-400">
-        Filter uses scheduled date within range (matches iOS reporting).{" "}
-        <Link href="/jobs" className="text-blue-600">
-          Jobs
-        </Link>
-      </p>
+      )}
     </div>
   );
 }

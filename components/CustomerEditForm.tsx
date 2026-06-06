@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateCustomer } from "@/lib/actions/customers";
+import { Section } from "@/components/ui/Card";
+import { Field, Input, Textarea } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 type C = {
   id: string;
@@ -23,74 +26,45 @@ export function CustomerEditForm({ customer }: { customer: C }) {
   const [saving, setSaving] = useState(false);
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-zinc-500">Edit customer</h2>
-      <div className="mt-3 grid gap-2 text-sm">
-        <label className="block">
-          <span className="text-xs text-zinc-600">Name</span>
-          <input
-            className="mt-0.5 w-full rounded border border-zinc-300 px-3 py-2"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs text-zinc-600">Primary contact</span>
-          <input
-            className="mt-0.5 w-full rounded border border-zinc-300 px-3 py-2"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs text-zinc-600">Phone</span>
-          <input
-            className="mt-0.5 w-full rounded border border-zinc-300 px-3 py-2"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs text-zinc-600">Email</span>
-          <input
-            className="mt-0.5 w-full rounded border border-zinc-300 px-3 py-2"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs text-zinc-600">Billing / mailing address</span>
-          <textarea
-            className="mt-0.5 w-full rounded border border-zinc-300 px-3 py-2"
-            rows={2}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          disabled={saving || !name.trim()}
-          className="mt-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-          onClick={async () => {
-            setSaving(true);
-            try {
-              await updateCustomer(customer.id, {
-                name: name.trim(),
-                primaryContactName: contact.trim() || null,
-                phoneNumber: phone.trim() || null,
-                email: email.trim() || null,
-                address: address.trim() || null,
-              });
-              router.refresh();
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          Save customer
-        </button>
+    <Section title="Edit customer">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name" className="sm:col-span-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="Primary contact">
+          <Input value={contact} onChange={(e) => setContact(e.target.value)} />
+        </Field>
+        <Field label="Phone">
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </Field>
+        <Field label="Email">
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </Field>
+        <Field label="Billing / mailing address" className="sm:col-span-2">
+          <Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
+        </Field>
       </div>
-    </section>
+      <Button
+        className="mt-4"
+        disabled={saving || !name.trim()}
+        onClick={async () => {
+          setSaving(true);
+          try {
+            await updateCustomer(customer.id, {
+              name: name.trim(),
+              primaryContactName: contact.trim() || null,
+              phoneNumber: phone.trim() || null,
+              email: email.trim() || null,
+              address: address.trim() || null,
+            });
+            router.refresh();
+          } finally {
+            setSaving(false);
+          }
+        }}
+      >
+        {saving ? "Saving…" : "Save customer"}
+      </Button>
+    </Section>
   );
 }

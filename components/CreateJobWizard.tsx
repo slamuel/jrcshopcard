@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import {
   createCustomer,
   createLocation,
   createJobFromWizard,
 } from "@/lib/actions/jobs";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { cn } from "@/components/ui/cn";
 
 type Step = "customer" | "location";
 
@@ -116,16 +120,20 @@ export function CreateJobWizard({ initialCustomers }: { initialCustomers: Custom
 
   if (step === "customer") {
     return (
-      <div className="max-w-md space-y-4">
-        <h1 className="text-2xl font-bold">New job</h1>
-        <p className="text-sm text-zinc-500">Choose a customer</p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="max-w-lg">
+        <PageHeader
+          title="New job"
+          description="Step 1 of 2 — choose a customer"
+          backHref="/jobs"
+          backLabel="Jobs"
+        />
+        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
         <ul className="space-y-2">
           {customers.map((c) => (
             <li key={c.id}>
               <button
                 type="button"
-                className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left text-sm hover:bg-zinc-50 disabled:opacity-50"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:bg-zinc-50 disabled:opacity-50"
                 disabled={pending}
                 onClick={() => void pickCustomer(c.id)}
               >
@@ -134,55 +142,51 @@ export function CreateJobWizard({ initialCustomers }: { initialCustomers: Custom
             </li>
           ))}
         </ul>
-        {creatingCustomer ? (
-          <div className="space-y-2 rounded-lg border border-dashed border-zinc-300 p-4">
-            <input
-              className="w-full rounded border px-3 py-2 text-sm"
-              placeholder="Customer name"
-              value={newCustomerName}
-              onChange={(e) => setNewCustomerName(e.target.value)}
-            />
-            <button
-              type="button"
-              className="rounded bg-zinc-900 px-3 py-2 text-sm text-white"
-              onClick={() => void createNewCustomer()}
-            >
-              Create
-            </button>
-            <button type="button" className="ml-2 text-sm text-zinc-500" onClick={() => setCreatingCustomer(false)}>
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="text-sm text-blue-600"
-            onClick={() => setCreatingCustomer(true)}
-          >
-            + New customer
-          </button>
-        )}
-        <div>
-          <Link href="/jobs" className="text-sm text-zinc-500">
-            Cancel
-          </Link>
+        <div className="mt-4">
+          {creatingCustomer ? (
+            <Card className="space-y-3 border-dashed">
+              <Input
+                placeholder="Customer name"
+                value={newCustomerName}
+                onChange={(e) => setNewCustomerName(e.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => void createNewCustomer()}>
+                  Create
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setCreatingCustomer(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => setCreatingCustomer(true)}>
+              + New customer
+            </Button>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md space-y-4">
-      <h1 className="text-2xl font-bold">Select location</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+    <div className="max-w-lg">
+      <PageHeader
+        title="Select location"
+        description="Step 2 of 2 — choose or add a job site"
+      />
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       <ul className="space-y-2">
         {locations.map((l) => (
           <li key={l.id}>
             <button
               type="button"
-              className={`w-full rounded-lg border px-4 py-3 text-left text-sm ${
-                selectedLocationId === l.id ? "border-blue-500 bg-blue-50" : "border-zinc-200 bg-white"
-              }`}
+              className={cn(
+                "w-full rounded-xl border px-4 py-3 text-left text-sm shadow-sm transition-colors",
+                selectedLocationId === l.id
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
+              )}
               onClick={() => {
                 setSelectedLocationId(l.id);
                 setDraftNewLocation(null);
@@ -193,33 +197,29 @@ export function CreateJobWizard({ initialCustomers }: { initialCustomers: Custom
           </li>
         ))}
       </ul>
-      <AddressAutocomplete
-        onResolved={(d) => {
-          setSelectedLocationId(null);
-          setDraftNewLocation({
-            name: "New address",
-            ...d,
-          });
-        }}
-      />
+      <div className="mt-4">
+        <AddressAutocomplete
+          onResolved={(d) => {
+            setSelectedLocationId(null);
+            setDraftNewLocation({ name: "New address", ...d });
+          }}
+        />
+      </div>
       {draftNewLocation && (
-        <p className="text-sm text-green-700">New location: {draftNewLocation.formattedAddress}</p>
+        <p className="mt-2 text-sm text-emerald-700">
+          New location: {draftNewLocation.formattedAddress}
+        </p>
       )}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={
-            pending ||
-            (!selectedLocationId && !draftNewLocation?.formattedAddress)
-          }
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+      <div className="mt-5 flex items-center gap-2">
+        <Button
+          disabled={pending || (!selectedLocationId && !draftNewLocation?.formattedAddress)}
           onClick={() => void finish()}
         >
-          Create job
-        </button>
-        <button type="button" className="text-sm text-zinc-500" onClick={() => setStep("customer")}>
+          {pending ? "Creating…" : "Create job"}
+        </Button>
+        <Button variant="ghost" onClick={() => setStep("customer")}>
           Back
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,39 +1,46 @@
 import Link from "next/link";
 import { listEmployees } from "@/lib/actions/employees";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { buttonClasses } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function EmployeesPage() {
   const employees = await listEmployees();
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold sm:text-2xl">Employees</h1>
-        <Link
-          href="/employees/new"
-          className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white active:bg-zinc-950 sm:w-auto sm:hover:bg-zinc-800"
-        >
-          Add employee
-        </Link>
-      </div>
-      <p className="mb-4 text-sm text-zinc-500">
-        Crew roster (same data as job assignments). Included for parity with iOS{" "}
-        <code className="text-xs">EmployeesView</code>.
-      </p>
-      <ul className="space-y-2">
-        {employees.map((e) => (
-          <li key={e.id}>
-            <Link
-              href={`/employees/${e.id}`}
-              className="block min-h-[3.25rem] rounded-lg border border-zinc-200 bg-white px-4 py-3 shadow-sm active:bg-zinc-100 sm:hover:bg-zinc-50"
-            >
-              <span className="font-medium">{e.name}</span>
-              {e.role && <span className="ml-2 text-sm text-zinc-500">{e.role}</span>}
-              {e.phoneNumber && <span className="ml-2 text-xs text-zinc-400">{e.phoneNumber}</span>}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {employees.length === 0 && <p className="text-sm text-zinc-500">No active employees.</p>}
+      <PageHeader
+        title="Employees"
+        description="Your crew roster, used for job assignments."
+        action={
+          <Link href="/employees/new" className={buttonClasses("primary")}>
+            Add employee
+          </Link>
+        }
+      />
+      {employees.length === 0 ? (
+        <EmptyState
+          title="No active employees"
+          description="Add crew members to assign them to jobs."
+        />
+      ) : (
+        <ul className="space-y-2">
+          {employees.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/employees/${e.id}`}
+                className="flex flex-wrap items-center gap-x-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition-colors hover:bg-zinc-50"
+              >
+                <span className="font-medium text-zinc-900">{e.name}</span>
+                {e.role && <span className="text-sm text-zinc-500">{e.role}</span>}
+                {e.phoneNumber && (
+                  <span className="text-xs text-zinc-400">{e.phoneNumber}</span>
+                )}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

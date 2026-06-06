@@ -51,10 +51,5 @@ export default async function JobDetailPage({
     })
   );
 
-  return (
-    <JobDetailForm
-      payload={payload}
-      geminiConfigured={Boolean(process.env.GEMINI_API_KEY)}
-    />
-  );
+  return <JobDetailForm payload={payload} />;
 }

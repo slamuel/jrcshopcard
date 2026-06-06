@@ -11,7 +11,10 @@ import {
 } from "@/lib/actions/jobs";
 import { deleteJobPhoto, updatePhotoCaption } from "@/lib/actions/photos";
 import { createCatalogMaterial } from "@/lib/actions/materials";
-import { RoofVisualizationPanel } from "@/components/RoofVisualizationPanel";
+import { Section } from "@/components/ui/Card";
+import { Button, buttonClasses } from "@/components/ui/Button";
+import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type Payload = {
   job: {
@@ -65,13 +68,7 @@ const STATUSES: JobStatus[] = [
   "cancelled",
 ];
 
-export function JobDetailForm({
-  payload,
-  geminiConfigured = false,
-}: {
-  payload: Payload;
-  geminiConfigured?: boolean;
-}) {
+export function JobDetailForm({ payload }: { payload: Payload }) {
   const router = useRouter();
   const [title, setTitle] = useState(payload.job.title);
   const [description, setDescription] = useState(payload.job.description);
@@ -195,236 +192,183 @@ export function JobDetailForm({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold leading-tight sm:text-2xl">{title}</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <Link
+            href="/jobs"
+            className="mb-2 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"
+          >
+            <span aria-hidden>←</span> Jobs
+          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">{title}</h1>
+            <StatusBadge status={status} />
+          </div>
           <p className="mt-1 text-sm text-zinc-500">Job #{payload.job.jobNumber}</p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[12rem] sm:flex-row sm:flex-wrap sm:justify-end">
-          <a
-            href={`/api/jobs/${payload.job.id}/pdf`}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-center text-sm font-medium shadow-sm hover:bg-zinc-50 active:bg-zinc-100"
-          >
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/jobs/${payload.job.id}/pdf`} className={buttonClasses("secondary")}>
             PDF only
           </a>
-          <a
-            href={`/api/jobs/${payload.job.id}/export-bundle`}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-900 bg-zinc-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-950"
-          >
+          <a href={`/api/jobs/${payload.job.id}/export-bundle`} className={buttonClasses("primary")}>
             PDF + photos (ZIP)
           </a>
         </div>
       </div>
 
       {payload.customer && (
-        <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-zinc-500">Customer</h2>
-          <p className="mt-1 font-medium">{payload.customer.name}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {tel && (
-              <a href={`tel:${tel.replace(/\s/g, "")}`} className="text-2xl text-blue-600" title="Call">
-                📞
-              </a>
-            )}
-            {tel && (
-              <a href={`sms:${tel.replace(/\s/g, "")}`} className="text-2xl text-blue-600" title="Text">
-                💬
-              </a>
-            )}
-            {mail && (
-              <a href={`mailto:${mail}`} className="text-2xl text-blue-600" title="Email">
-                ✉️
-              </a>
-            )}
+        <Section title="Customer">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="font-medium text-zinc-900">{payload.customer.name}</p>
+            <div className="flex gap-2">
+              {tel && (
+                <a href={`tel:${tel.replace(/\s/g, "")}`} className={buttonClasses("secondary", "sm")}>
+                  Call
+                </a>
+              )}
+              {tel && (
+                <a href={`sms:${tel.replace(/\s/g, "")}`} className={buttonClasses("secondary", "sm")}>
+                  Text
+                </a>
+              )}
+              {mail && (
+                <a href={`mailto:${mail}`} className={buttonClasses("secondary", "sm")}>
+                  Email
+                </a>
+              )}
+            </div>
           </div>
-        </section>
+        </Section>
       )}
 
-      <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Details</h2>
-        <label className="block text-xs text-zinc-600">Title</label>
-        <input
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <label className="block text-xs text-zinc-600">Status</label>
-        <select
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as JobStatus)}
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <label className="block text-xs text-zinc-600">Scheduled</label>
-        <input
-          type="datetime-local"
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          value={scheduledDate}
-          onChange={(e) => setScheduledDate(e.target.value)}
-        />
-        <label className="block text-xs text-zinc-600">Completed date</label>
-        <input
-          type="date"
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          value={completedDate}
-          onChange={(e) => setCompletedDate(e.target.value)}
-        />
-        <label className="block text-xs text-zinc-600">Description</label>
-        <textarea
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          rows={4}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <label className="block text-xs text-zinc-600">Internal notes</label>
-        <textarea
-          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-          rows={3}
-          value={internalNotes}
-          onChange={(e) => setInternalNotes(e.target.value)}
-        />
-        <button
-          type="button"
-          disabled={saving}
-          onClick={saveCore}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50"
-        >
-          Save details
-        </button>
-      </section>
+      <Section title="Details">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Title" className="sm:col-span-2">
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label="Status">
+            <Select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)}>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {statusLabel(s)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Scheduled">
+            <Input
+              type="datetime-local"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+            />
+          </Field>
+          <Field label="Completed date">
+            <Input
+              type="date"
+              value={completedDate}
+              onChange={(e) => setCompletedDate(e.target.value)}
+            />
+          </Field>
+          <Field label="Description" className="sm:col-span-2">
+            <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </Field>
+          <Field label="Internal notes" className="sm:col-span-2">
+            <Textarea rows={3} value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} />
+          </Field>
+        </div>
+        <Button className="mt-4" disabled={saving} onClick={saveCore}>
+          {saving ? "Saving…" : "Save details"}
+        </Button>
+      </Section>
 
       {payload.location && (
-        <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <h2 className="text-sm font-semibold">Location</h2>
-          <p className="mt-1">{payload.location.name}</p>
-          <p className="text-sm text-zinc-600">{payload.location.formattedAddress}</p>
-        </section>
+        <Section title="Location">
+          <p className="font-medium text-zinc-900">{payload.location.name}</p>
+          <p className="text-sm text-zinc-500">{payload.location.formattedAddress}</p>
+        </Section>
       )}
 
-      <RoofVisualizationPanel
-        jobId={payload.job.id}
-        geminiConfigured={geminiConfigured}
-        existingPhotos={photos.map((p) => ({ id: p.id, fileName: p.fileName }))}
-        onGenerated={(p) =>
-          setPhotos((prev) => [
-            {
-              ...p,
-              isAiRoofPreview: p.isAiRoofPreview ?? true,
-              aiRoofPrompt: p.aiRoofPrompt ?? null,
-            },
-            ...prev,
-          ])
-        }
-      />
+      <Link
+        href="/roof-preview"
+        className="flex items-center justify-between rounded-xl border border-violet-200 bg-violet-50/60 p-4 text-sm text-violet-900 transition-colors hover:bg-violet-100/60"
+      >
+        <span>
+          <span className="font-semibold">Roof preview</span> — generate an AI roof
+          visualization and attach it to this job
+        </span>
+        <span aria-hidden>→</span>
+      </Link>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Materials</h2>
-        <p className="mb-2 text-xs text-zinc-500">
-          Quantity, optional unit override, and note per line — matches iOS material picker.
-        </p>
-        <ul className="mt-2 space-y-3 text-sm">
+      <Section
+        title="Materials"
+        description="Quantity, optional unit override, and note per line."
+      >
+        <ul className="space-y-3">
           {payload.materials.map((m) => (
-            <li key={m.id} className="rounded-lg border border-zinc-100 p-3">
-              <div className="font-medium">{m.name}</div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <label className="text-xs text-zinc-600">
-                  Qty
-                  <input
+            <li key={m.id} className="rounded-lg border border-zinc-200 p-3">
+              <div className="flex items-baseline justify-between">
+                <span className="font-medium text-zinc-900">{m.name}</span>
+                <span className="text-xs text-zinc-400">Default: {m.unit ?? "—"}</span>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <Field label="Qty">
+                  <Input
                     type="number"
                     step="any"
-                    className="ml-1 w-24 rounded border border-zinc-300 px-2 py-1"
                     placeholder="0"
                     value={matQty[m.id] ?? ""}
-                    onChange={(e) =>
-                      setMatQty((prev) => ({ ...prev, [m.id]: e.target.value }))
-                    }
+                    onChange={(e) => setMatQty((prev) => ({ ...prev, [m.id]: e.target.value }))}
                   />
-                </label>
-                <span className="text-zinc-400">Default: {m.unit ?? "—"}</span>
-              </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <label className="text-xs text-zinc-600">
-                  Unit override
-                  <input
-                    className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1"
+                </Field>
+                <Field label="Unit override">
+                  <Input
                     placeholder="e.g. bundles"
                     value={matUnit[m.id] ?? ""}
-                    onChange={(e) =>
-                      setMatUnit((prev) => ({ ...prev, [m.id]: e.target.value }))
-                    }
+                    onChange={(e) => setMatUnit((prev) => ({ ...prev, [m.id]: e.target.value }))}
                   />
-                </label>
-                <label className="text-xs text-zinc-600">
-                  Note
-                  <input
-                    className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1"
+                </Field>
+                <Field label="Note">
+                  <Input
                     value={matNote[m.id] ?? ""}
-                    onChange={(e) =>
-                      setMatNote((prev) => ({ ...prev, [m.id]: e.target.value }))
-                    }
+                    onChange={(e) => setMatNote((prev) => ({ ...prev, [m.id]: e.target.value }))}
                   />
-                </label>
+                </Field>
               </div>
             </li>
           ))}
         </ul>
-        <button
-          type="button"
-          className="mt-3 rounded-lg bg-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-300"
-          onClick={saveMaterials}
-          disabled={saving}
-        >
+        <Button className="mt-3" variant="secondary" size="sm" onClick={saveMaterials} disabled={saving}>
           Save materials
-        </button>
+        </Button>
 
         <div className="mt-6 border-t border-zinc-200 pt-4">
-          <h3 className="text-sm font-semibold text-zinc-600">New catalog item</h3>
-          <p className="text-xs text-zinc-500">Add a material to the org catalog (like iOS &quot;New Material&quot;).</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            <input
-              className="rounded border px-2 py-1 text-sm"
-              placeholder="Name *"
-              value={newMatName}
-              onChange={(e) => setNewMatName(e.target.value)}
-            />
-            <input
-              className="rounded border px-2 py-1 text-sm"
-              placeholder="SKU"
-              value={newMatSku}
-              onChange={(e) => setNewMatSku(e.target.value)}
-            />
-            <input
-              className="rounded border px-2 py-1 text-sm"
-              placeholder="Default unit"
-              value={newMatUnit}
-              onChange={(e) => setNewMatUnit(e.target.value)}
-            />
+          <h3 className="text-sm font-semibold text-zinc-700">New catalog item</h3>
+          <p className="mt-0.5 text-xs text-zinc-500">Add a material to the organization catalog.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <Input placeholder="Name *" value={newMatName} onChange={(e) => setNewMatName(e.target.value)} />
+            <Input placeholder="SKU" value={newMatSku} onChange={(e) => setNewMatSku(e.target.value)} />
+            <Input placeholder="Default unit" value={newMatUnit} onChange={(e) => setNewMatUnit(e.target.value)} />
           </div>
-          <button
-            type="button"
-            className="mt-2 rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+          <Button
+            className="mt-3"
+            size="sm"
             disabled={addingMat || !newMatName.trim()}
             onClick={() => void createNewCatalogMaterial()}
           >
             Create material
-          </button>
+          </Button>
         </div>
-      </section>
+      </Section>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Employees on job</h2>
-        <ul className="mt-2 space-y-1">
+      <Section title="Employees on job">
+        <ul className="space-y-1">
           {payload.employees.map((e) => (
             <li key={e.id}>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm text-zinc-700">
                 <input
                   type="checkbox"
+                  className="h-4 w-4 rounded border-zinc-300"
                   checked={selectedEmployees.includes(e.id)}
                   onChange={(ev) => {
                     if (ev.target.checked) {
@@ -439,37 +383,26 @@ export function JobDetailForm({
             </li>
           ))}
         </ul>
-        <button
-          type="button"
-          className="mt-3 rounded-lg bg-zinc-200 px-3 py-1.5 text-sm hover:bg-zinc-300"
-          onClick={saveEmployees}
-          disabled={saving}
-        >
+        <Button className="mt-3" variant="secondary" size="sm" onClick={saveEmployees} disabled={saving}>
           Save roster
-        </button>
+        </Button>
 
-        <h3 className="mt-4 text-sm font-semibold text-zinc-500">Hours logged</h3>
-        <ul className="mt-2 space-y-3">
+        <h3 className="mt-6 text-sm font-semibold text-zinc-700">Hours logged</h3>
+        <ul className="mt-3 space-y-3">
           {hoursRows.map((row) => (
-            <li key={row.id} className="flex flex-wrap items-end gap-2 rounded border border-zinc-100 p-2 text-sm">
-              <label className="min-w-[10rem]">
-                <span className="text-xs text-zinc-500">Name</span>
-                <input
-                  className="mt-0.5 w-full rounded border px-2 py-1"
+            <li key={row.id} className="flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 p-3">
+              <Field label="Name" className="min-w-[10rem] flex-1">
+                <Input
                   value={row.employeeName}
                   onChange={(e) =>
                     setHoursRows((prev) =>
-                      prev.map((r) =>
-                        r.id === row.id ? { ...r, employeeName: e.target.value } : r
-                      )
+                      prev.map((r) => (r.id === row.id ? { ...r, employeeName: e.target.value } : r))
                     )
                   }
                 />
-              </label>
-              <label className="text-xs text-zinc-600">
-                From roster
-                <select
-                  className="mt-0.5 block rounded border px-2 py-1"
+              </Field>
+              <Field label="From roster">
+                <Select
                   value={row.employeeId ?? ""}
                   onChange={(e) => {
                     const emId = e.target.value || null;
@@ -477,11 +410,7 @@ export function JobDetailForm({
                     setHoursRows((prev) =>
                       prev.map((r) =>
                         r.id === row.id
-                          ? {
-                              ...r,
-                              employeeId: emId,
-                              employeeName: em?.name ?? r.employeeName,
-                            }
+                          ? { ...r, employeeId: emId, employeeName: em?.name ?? r.employeeName }
                           : r
                       )
                     );
@@ -493,29 +422,23 @@ export function JobDetailForm({
                       {em.name}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label>
-                <span className="text-xs text-zinc-500">Hours</span>
-                <input
+                </Select>
+              </Field>
+              <Field label="Hours" className="w-24">
+                <Input
                   type="number"
                   step="0.25"
-                  className="mt-0.5 w-20 rounded border px-2 py-1"
                   value={row.hours}
                   onChange={(e) => {
                     const v = parseFloat(e.target.value);
-                    setHoursRows((prev) =>
-                      prev.map((r) => (r.id === row.id ? { ...r, hours: v } : r))
-                    );
+                    setHoursRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, hours: v } : r)));
                   }}
                 />
-              </label>
+              </Field>
               <button
                 type="button"
-                className="text-xs text-red-600"
-                onClick={() =>
-                  setHoursRows((prev) => prev.filter((r) => r.id !== row.id))
-                }
+                className="pb-2 text-xs font-medium text-red-600 hover:text-red-700"
+                onClick={() => setHoursRows((prev) => prev.filter((r) => r.id !== row.id))}
               >
                 Remove
               </button>
@@ -524,33 +447,26 @@ export function JobDetailForm({
         </ul>
         <button
           type="button"
-          className="mt-2 text-sm text-blue-600"
+          className="mt-3 text-sm font-medium text-zinc-600 hover:text-zinc-900"
           onClick={() =>
             setHoursRows((prev) => [
               ...prev,
-              {
-                id: `new-${crypto.randomUUID()}`,
-                employeeId: null,
-                employeeName: "",
-                hours: 0,
-              },
+              { id: `new-${crypto.randomUUID()}`, employeeId: null, employeeName: "", hours: 0 },
             ])
           }
         >
           + Add hours line
         </button>
-      </section>
+      </Section>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-500">Photos</h2>
-        <p className="text-xs text-zinc-500">
-          Upload reference shots. <strong>Gemini roof previews</strong> are saved here as images with an AI
-          badge. (Requires <code className="text-[10px]">GEMINI_API_KEY</code> on the server.)
-        </p>
+      <Section
+        title="Photos"
+        description="Upload reference shots. Saved Gemini roof previews appear here with an AI badge."
+      >
         <input
           type="file"
           accept="image/*"
-          className="mt-2 text-sm"
+          className="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800"
           onChange={async (e) => {
             const f = e.target.files?.[0];
             if (!f) return;
@@ -566,59 +482,71 @@ export function JobDetailForm({
             e.target.value = "";
           }}
         />
-        <ul className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {photos.map((p) => (
-            <li key={p.id} className="rounded-lg border border-zinc-200 p-2">
-              {p.isAiRoofPreview && (
-                <p className="mb-1 rounded bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">
-                  Roof preview (Gemini)
-                  {p.aiRoofPrompt && (
-                    <span className="ml-1 font-normal text-violet-700">
-                      — {p.aiRoofPrompt.slice(0, 80)}
-                      {(p.aiRoofPrompt?.length ?? 0) > 80 ? "…" : ""}
-                    </span>
-                  )}
-                </p>
-              )}
-              <div className="relative aspect-video overflow-hidden rounded bg-zinc-100">
-                {p.url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.url} alt="" className="h-full w-full object-contain" />
+        {photos.length > 0 && (
+          <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {photos.map((p) => (
+              <li key={p.id} className="rounded-lg border border-zinc-200 p-2">
+                {p.isAiRoofPreview && (
+                  <p className="mb-1 rounded bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">
+                    Roof preview (Gemini)
+                    {p.aiRoofPrompt && (
+                      <span className="ml-1 font-normal text-violet-700">
+                        — {p.aiRoofPrompt.slice(0, 80)}
+                        {(p.aiRoofPrompt?.length ?? 0) > 80 ? "…" : ""}
+                      </span>
+                    )}
+                  </p>
                 )}
-                <button
-                  type="button"
-                  className="absolute right-1 top-1 rounded bg-black/50 px-1 text-xs text-white"
-                  onClick={async () => {
-                    await deleteJobPhoto(p.id);
-                    setPhotos((prev) => prev.filter((x) => x.id !== p.id));
+                <div className="relative aspect-video overflow-hidden rounded bg-zinc-100">
+                  {p.url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.url} alt="" className="h-full w-full object-contain" />
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Delete photo"
+                    className="absolute right-1 top-1 rounded bg-black/50 px-1.5 text-sm text-white hover:bg-black/70"
+                    onClick={async () => {
+                      await deleteJobPhoto(p.id);
+                      setPhotos((prev) => prev.filter((x) => x.id !== p.id));
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <Input
+                  className="mt-2"
+                  placeholder="Caption / note"
+                  defaultValue={p.notes ?? ""}
+                  onBlur={async (e) => {
+                    await updatePhotoCaption(p.id, e.target.value);
+                    setPhotos((prev) =>
+                      prev.map((x) => (x.id === p.id ? { ...x, notes: e.target.value || null } : x))
+                    );
                   }}
-                >
-                  ×
-                </button>
-              </div>
-              <input
-                className="mt-2 w-full rounded border px-2 py-1 text-xs"
-                placeholder="Caption / note"
-                defaultValue={p.notes ?? ""}
-                onBlur={async (e) => {
-                  await updatePhotoCaption(p.id, e.target.value);
-                  setPhotos((prev) =>
-                    prev.map((x) =>
-                      x.id === p.id ? { ...x, notes: e.target.value || null } : x
-                    )
-                  );
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <Link href="/jobs" className="text-sm text-zinc-500 hover:text-zinc-800">
-        ← Back to jobs
-      </Link>
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
     </div>
   );
+}
+
+function statusLabel(s: JobStatus): string {
+  const map: Record<JobStatus, string> = {
+    draft: "Draft",
+    submitted: "Submitted",
+    approved: "Approved",
+    scheduled: "Scheduled",
+    inProgress: "In progress",
+    onHold: "On hold",
+    completed: "Completed",
+    invoiced: "Invoiced",
+    cancelled: "Cancelled",
+  };
+  return map[s];
 }
 
 function isoToLocal(iso: string): string {

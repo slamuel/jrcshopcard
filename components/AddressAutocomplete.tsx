@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Field, Input } from "@/components/ui/Input";
 
 type Pred = { description: string; place_id: string };
 
@@ -45,18 +46,18 @@ export function AddressAutocomplete({
 
   return (
     <div className="relative">
-      <label className="block text-xs font-medium text-zinc-600">Search address</label>
-      <input
-        className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-        value={q}
-        disabled={disabled}
-        placeholder="Start typing an address…"
-        onChange={(e) => {
-          setQ(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-      />
+      <Field label="Search address">
+        <Input
+          value={q}
+          disabled={disabled}
+          placeholder="Start typing an address…"
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
+      </Field>
       {open && preds.length > 0 && (
         <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-zinc-200 bg-white text-sm shadow-lg">
           {preds.map((p) => (
